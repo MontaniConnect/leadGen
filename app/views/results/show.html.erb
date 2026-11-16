@@ -1,0 +1,125 @@
+<% content_for(:title) { "Results · Leads" } %>
+<main class="page">
+  <p><%= link_to "← Back to leads", root_path %></p>
+  <h1>Results</h1>
+  <p class="hint">
+    Rates are of messages actually sent. A percentage is only shown once a group has at least <%= @report.min_sample %> messages;
+    below that you see the plain count and "too few to judge".
+  </p>
+
+  <% if @report.empty? %>
+    <p class="panel">Nothing recorded yet. Mark a connection request sent on a lead and the results start here.</p>
+  <% else %>
+    <section aria-labelledby="funnel-heading" class="results-block">
+      <h2 id="funnel-heading">Funnel</h2>
+      <table>
+        <thead><tr><th>Stage</th><th>Count</th><th>Counted against</th></tr></thead>
+        <tbody>
+          <% @report.funnel.each do |stage| %>
+            <tr>
+              <td><%= stage.label %></td>
+              <td><%= stage.label == "Connection requests sent" ? stage.cell.count : rate_text(stage.cell, @report) %></td>
+              <td><%= stage.basis %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </section>
+
+    <%= render "results/table", id: "variant", title: "By message variant", column: "Variant", rows: @report.breakdown("variant"),
+          report: @report,
+          note: "#{@random_share[0]} of #{@random_share[1]} messages were assigned at random. Suggestions below use only those, so favouring a winner can't bias the comparison." %>
+    <%= render "results/table", id: "score-check", title: "Score check: Hot, Warm and Cold", column: "Tier at send time",
+          rows: @report.breakdown("tier"), report: @report,
+          note: "If Warm or Cold leads reply as well as Hot ones, the scoring thresholds may need tuning." %>
+    <%= render "results/table", id: "score-band", title: "By best score", column: "Higher of the two scores",
+          rows: @report.breakdown("score"), report: @report, note: nil %>
+    <%= render "results/table", id: "title", title: "By contact title", column: "Contact", rows: @report.breakdown("title"),
+          report: @report, note: nil %>
+    <%= render "results/table", id: "size", title: "By company size", column: "Employees", rows: @report.breakdown("size"),
+          report: @report, note: nil %>
+    <%= render "results/table", id: "industry", title: "By industry", column: "Industry", rows: @report.breakdown("industry"),
+          report: @report, note: nil %>
+
+    <section aria-labelledby="learn-heading" class="results-block">
+      <h2 id="learn-heading">What the results suggest</h2>
+      <p class="hint">Nothing here changes by itself. You approve each item. Even at <%= @report.min_sample %> messages the margin of error is wide (roughly ±15 points), so treat suggestions as leads to check, not proof.</p>
+
+      <% unless @suggestions.enough_data? %>
+        <p class="panel">Suggestions appear after <%= @report.min_sample %> messages have been sent. So far: <%= @report.messaged.size %>.</p>
+      <% end %>
+
+      <% if @approvals.defaults.any? %>
+        <h3>Approved defaults</h3>
+        <p class="hint">Used for most new sends in that segment. <%= (Setting.get("results.explore_share") * 100).round %>% of sends are still assigned at random so every variant keeps being tested.</p>
+        <ul class="stack">
+          <% @approvals.defaults.each do |key, variant| %>
+            <li>
+              <span><%= default_label(key) %> → <strong><%= Message::LABEL_NAMES.fetch(variant) %></strong></span>
+              <%= button_to "Remove", results_defaults_path(key: key), method: :delete, class: "btn secondary" %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <% if @suggestions.variant_defaults.any? %>
+        <h3>Suggested default variant per segment</h3>
+        <table>
+          <thead><tr><th>Segment</th><th>Best variant</th><th>Replied, by variant (random sends only)</th><th></th></tr></thead>
+          <tbody>
+            <% @suggestions.variant_defaults.each do |suggestion| %>
+              <tr>
+                <td><%= suggestion.dimension.capitalize %>: <%= suggestion.segment %></td>
+                <td><strong><%= suggestion.variant_name %></strong></td>
+                <td><%= safe_join(suggestion.cells.map { |variant, cell| tag.span("#{Message::LABEL_NAMES[variant]}: #{cell}") }, tag.br) %></td>
+                <td>
+                  <% if suggestion.approved %>
+                    <span class="tag sent">Approved</span>
+                  <% else %>
+                    <%= button_to "Approve as default", results_defaults_path(dimension: suggestion.dimension, segment: suggestion.segment, variant: suggestion.variant),
+                          method: :post, class: "btn secondary" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% elsif @suggestions.enough_data? %>
+        <p class="hint">No segment has two variants with enough random sends and a clear gap yet.</p>
+      <% end %>
+
+      <% if @suggestions.example_candidates.any? %>
+        <h3>Messages that earned a positive reply</h3>
+        <p class="hint">Approve a few and they are shown to the drafting model as style examples (names removed) the next time drafts are made. At most <%= Setting.get("results.max_examples") %> are used.</p>
+        <ul class="stack">
+          <% @suggestions.example_candidates.each do |example| %>
+            <li>
+              <blockquote><%= example.text %></blockquote>
+              <span class="hint"><%= example.send_record.call_booked ? "Call booked" : "Positive reply" %> · <%= Message::LABEL_NAMES[example.send_record.variant] %></span>
+              <% if example.approved %>
+                <%= button_to "Remove example", results_example_path(example.send_record.id), method: :delete, class: "btn secondary" %>
+              <% else %>
+                <%= button_to "Use as drafting example", results_example_path(example.send_record.id), method: :post, class: "btn secondary" %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <% if @suggestions.rule_changes.any? %>
+        <h3>Suggested rule changes (advice only)</h3>
+        <ul class="stack">
+          <% @suggestions.rule_changes.each do |change| %>
+            <li class="panel flags">
+              <strong><%= change.title %></strong>
+              <span><%= change.evidence %></span>
+              <span><%= change.how %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% elsif @suggestions.enough_data? %>
+        <p class="hint">No filter or scoring change is suggested by the data so far.</p>
+      <% end %>
+    </section>
+  <% end %>
+</main>

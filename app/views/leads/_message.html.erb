@@ -1,0 +1,23 @@
+<% max = Setting.get("drafting.max_words") %>
+<% over = message.word_count > max %>
+<%= form_with model: message, url: message_path(message), method: :patch, class: "panel",
+      data: { controller: "message", message_max_value: max, action: "turbo:submit-end->message#saved" } do |form| %>
+  <div class="variant-top">
+    <h3>
+      <%= form.label :body, message.label_name, for: dom_id(message, :body) %>
+      <% if assigned %><span class="tag">Assigned to send</span><% end %>
+      <% if message.status == "sent" %><span class="tag sent">Sent</span><% end %>
+    </h3>
+    <span class="word-count <%= 'over' if over %>" data-message-target="count"><%= message.word_count %> words</span>
+  </div>
+  <p class="warning" data-message-target="warning" role="status" <%= "hidden" unless over %>>
+    Over <%= max %> words. Shorten before sending.
+  </p>
+  <%= form.text_area :body, id: dom_id(message, :body), rows: 5, class: "message-field",
+        data: { message_target: "field", action: "input->message#count change->message#save" } %>
+  <div class="variant-actions">
+    <button type="button" class="btn" data-message-target="copyButton" data-action="message#copy"
+            <%= "data-first-copy" if first %>>Copy message</button>
+    <span class="save-state" data-message-target="status" role="status"></span>
+  </div>
+<% end %>

@@ -1,0 +1,84 @@
+<% content_for(:title) { "Partners · Leads" } %>
+<% running = @step.problem.to_s.include?("already in progress") %>
+<% content_for(:head) { tag.meta("http-equiv": "refresh", content: "5") } if running %>
+<main class="page">
+  <p><%= link_to "← Back to leads", root_path %></p>
+  <h1>Partners: staffing firms</h1>
+  <p class="hint">
+    Staffing, recruiting and outsourcing firms are not sales leads, so they are kept here, apart from your Hot and Warm
+    queue and the Results numbers. Each gets one short message that says we are open to collaborating or overlapping in
+    the future. Nothing is sent automatically.
+  </p>
+
+  <section class="panel" aria-labelledby="draft-heading">
+    <h2 id="draft-heading">Partnership messages</h2>
+    <% if @step.problem %>
+      <p class="hint" role="status"><%= @step.problem %></p>
+    <% else %>
+      <% button = paid_button("Draft partnership messages for", @step, "firm") %>
+      <%= button_to button[:label], pipeline_partner_draft_path, method: :post, class: "btn",
+            form: { data: { turbo_confirm: button[:confirm], turbo_submits_with: "Starting…" } } %>
+    <% end %>
+    <p class="hint">They are drafted from the facts Apollo gave us (and any page text), so they are more general than lead messages.</p>
+  </section>
+
+  <% if @candidates.empty? %>
+    <p class="panel">No staffing firms found yet. They appear after an import, when a company is filtered out as staffing, recruiting or outsourcing, or scored as a competitor.</p>
+  <% end %>
+
+  <% @candidates.each do |company| %>
+    <% message = company.messages.find { |m| m.label == "partnership" } %>
+    <% target = Leads::LinkedinTarget.call(company) %>
+    <section class="panel" aria-labelledby="partner-<%= company.id %>">
+      <h2 id="partner-<%= company.id %>"><%= company.name %></h2>
+      <p class="hint">
+        <% if website_url(company) %><%= link_to website_label(company), website_url(company), target: "_blank", rel: "noopener noreferrer" %> · <% end %>
+        <%= [ company.country, ("#{company.employees} employees" if company.employees) ].compact.join(" · ") %>
+      </p>
+      <p><strong>Why here:</strong> <%= @formatter.reason(company) %></p>
+      <p>
+        <strong>Contact:</strong>
+        <% if company.selected_contact %><%= company.selected_contact.full_name %>, <%= company.selected_contact.title %><% else %>none yet<% end %>
+        <% if target.url %> · <%= link_to target.label, target.url, target: "_blank", rel: "noopener noreferrer" %><% end %>
+      </p>
+
+      <% unless company.selected_contact %>
+        <details class="more">
+          <summary>Add a contact yourself</summary>
+          <%= form_with url: lead_contact_path(company), scope: :contact do |form| %>
+            <%= hidden_field_tag :return_to, "partners", id: nil %>
+            <div class="field"><%= form.label :first_name, "First name", for: "contact_first_name_#{company.id}" %><%= form.text_field :first_name, class: "select", id: "contact_first_name_#{company.id}" %></div>
+            <div class="field"><%= form.label :last_name, "Last name", for: "contact_last_name_#{company.id}" %><%= form.text_field :last_name, class: "select", id: "contact_last_name_#{company.id}" %></div>
+            <div class="field"><%= form.label :title, "Title", for: "contact_title_#{company.id}" %><%= form.text_field :title, class: "select", id: "contact_title_#{company.id}" %></div>
+            <div class="field"><%= form.label :linkedin_url, "LinkedIn profile link (optional)", for: "contact_linkedin_#{company.id}" %><%= form.url_field :linkedin_url, class: "select", id: "contact_linkedin_#{company.id}" %></div>
+            <%= form.submit "Save contact", class: "btn" %>
+          <% end %>
+        </details>
+      <% end %>
+
+      <% if message %>
+        <%= render "leads/message", message: message, first: false, assigned: false %>
+        <%= button_to (message.status == "sent" ? "Sent ✓ (undo)" : "Mark message sent"), partner_sent_path(company), method: :patch,
+              class: "btn secondary", aria: { pressed: (message.status == "sent").to_s } %>
+      <% else %>
+        <p class="hint">No message drafted yet.</p>
+      <% end %>
+      <%= button_to "Not a staffing firm", partner_dismiss_path(company), method: :patch, class: "btn secondary",
+            form: { data: { turbo_confirm: "Remove #{company.name} from Partners? You can restore it at the bottom of this page." } } %>
+    </section>
+  <% end %>
+
+  <% if @dismissed.any? %>
+    <details class="more">
+      <summary>Removed from Partners (<%= @dismissed.size %>)</summary>
+      <ul class="stack">
+        <% @dismissed.each do |company| %>
+          <li>
+            <span><%= company.name %></span>
+            <%= button_to "Restore", partner_restore_path(company), method: :patch, class: "btn secondary" %>
+          </li>
+        <% end %>
+      </ul>
+    </details>
+  <% end %>
+</main>

@@ -1,0 +1,7 @@
+Company Name,Account Stage,# Employees,Industry,Website,Company Linkedin Url,Company City,Company State,Company Country,Keywords,Technologies,Total Funding,Latest Funding,Latest Funding Amount,Last Raised At,Annual Revenue,Apollo Account Id,SIC Codes,NAICS Codes,Short Description,Founded Year,Primary Intent Topic,Primary Intent Score,Parent Company
+Acme Software,Cold,45,Software,https://www.acme.com,https://linkedin.com/company/acme,Austin,Texas,United States,"saas, b2b","AWS, Salesforce","$5,000,000",Series A,"$5,000,000",2026-10-01,"$2.5M",a1,7372,541511,Builds things,2015,Hiring,80,Acme Holdings
+Beta Ops,,"1,200",Logistics,beta.io,,Denver,Colorado,United States,,,,,,,,b2,,,,,,,
+,,10,,nope.com,,,,,,,,,,,,x9,,,,,,,
+No Id No Site,,10,,,,,,,,,,,,,,,,,,,,,
+Gamma Staffing,,20,Staffing,gamma.com,,,,United States,staffing,,,,,,,g3,,5613,,,,,
+Dupe Domain,,20,,acme.com,,,,United States,,,,,,,,zz,,,,,,,

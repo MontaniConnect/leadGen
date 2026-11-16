@@ -1,0 +1,71 @@
+<% content_for(:title) { "Spend · Leads" } %>
+<% money = ->(amount) { amount < 1 ? format("$%.4f", amount) : format("$%.2f", amount) } %>
+<main class="page">
+  <p><%= link_to "← Back to leads", root_path %></p>
+  <h1>Spend</h1>
+
+  <% if @ledger.cap.nil? %>
+    <p class="flash alert" role="alert">No spending cap is set, so paid scoring and drafting runs are blocked. Set one below.</p>
+  <% end %>
+
+  <section class="scores" aria-label="Totals">
+    <div class="score-card"><div class="score-label">Spent</div><div class="score-value"><%= money.call(@ledger.spent) %></div></div>
+    <div class="score-card"><div class="score-label">Reserved</div><div class="score-value"><%= money.call(@ledger.reserved) %></div></div>
+    <div class="score-card"><div class="score-label">Cap</div><div class="score-value"><%= @ledger.cap ? money.call(@ledger.cap) : "Not set" %></div></div>
+    <div class="score-card"><div class="score-label">Remaining</div><div class="score-value"><%= @ledger.remaining ? money.call(@ledger.remaining) : "n/a" %></div></div>
+  </section>
+
+  <section class="panel" aria-labelledby="cap-heading">
+    <h2 id="cap-heading">Spending cap</h2>
+    <p>Runs stop before a call that could push spent plus reserved past the cap. Reserved is the worst case of batches not yet collected.</p>
+    <%= form_with url: cap_spend_path, method: :patch, class: "controls" do |form| %>
+      <div class="field">
+        <%= form.label :amount, "Cap in US dollars" %>
+        <%= form.text_field :amount, value: (@ledger.cap && format("%.2f", @ledger.cap)), inputmode: "decimal", class: "select", required: true %>
+      </div>
+      <%= form.submit "Save cap", class: "btn" %>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="models-heading">
+    <h2 id="models-heading">By model</h2>
+    <% if @by_model.empty? %>
+      <p class="hint">No paid calls recorded yet.</p>
+    <% else %>
+      <table>
+        <thead><tr><th>Model</th><th>Calls</th><th>Input tokens</th><th>Output tokens</th><th>Cache read</th><th>Cache write</th><th>Cost</th></tr></thead>
+        <tbody>
+          <% @by_model.each do |model, row| %>
+            <tr><td><%= model %></td><td><%= row[:calls] %></td><td><%= number_with_delimiter(row[:input]) %></td>
+                <td><%= number_with_delimiter(row[:output]) %></td><td><%= number_with_delimiter(row[:cache_read]) %></td>
+                <td><%= number_with_delimiter(row[:cache_write]) %></td><td><%= money.call(row[:cost]) %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="runs-heading">
+    <h2 id="runs-heading">Runs</h2>
+    <% if @runs.empty? %>
+      <p class="hint">No runs yet.</p>
+    <% else %>
+      <table>
+        <thead><tr><th>Run</th><th>Kind</th><th>Status</th><th>Calls</th><th>Input</th><th>Output</th><th>Cost</th><th>Note</th></tr></thead>
+        <tbody>
+          <% @runs.each do |run| %>
+            <% totals = run.totals %>
+            <tr>
+              <td>#<%= run.id %></td><td><%= run.kind.tr("_", " ") %></td><td><%= run.status.capitalize %></td>
+              <td><%= totals[:calls] %><%= " (#{totals[:failed]} failed)" if totals[:failed].positive? %></td>
+              <td><%= number_with_delimiter(totals[:input_tokens]) %></td><td><%= number_with_delimiter(totals[:output_tokens]) %></td>
+              <td><%= money.call(totals[:cost_usd]) %></td><td><%= run.halted_reason %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </section>
+
+  <p class="hint">Costs are tokens times the prices under <code>pricing.*</code> in the settings. Confirm those match Anthropic's current price list.</p>
+</main>

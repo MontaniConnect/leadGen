@@ -1,0 +1,20 @@
+<% content_for(:title) { @lead ? "#{@lead.name} · Leads" : "Leads" } %>
+<% previous_lead, next_lead = (@lead ? neighbours(@lead) : [ nil, nil ]) %>
+
+<div class="shell"
+     data-controller="shortcuts"
+     data-shortcuts-previous-url-value="<%= previous_lead && lead_path(previous_lead, filter_params) %>"
+     data-shortcuts-next-url-value="<%= next_lead && lead_path(next_lead, filter_params) %>">
+  <%= render "leads/queue", lead: @lead %>
+
+  <main class="detail">
+    <% if @lead.nil? %>
+      <p class="empty">
+        Nothing to review here yet. <%= link_to "Import your Apollo file", new_import_path %> to start,
+        then run scoring and drafting, or change the filter.
+      </p>
+    <% else %>
+      <%= render "leads/lead", lead: @lead %>
+    <% end %>
+  </main>
+</div>

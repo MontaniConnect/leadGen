@@ -1,0 +1,18 @@
+<% content_for(:title) { "Export · Leads" } %>
+<% content_for(:head) { tag.meta("http-equiv": "refresh", content: "3") } unless @export.finished? %>
+<main class="page">
+  <p><%= link_to "← Back to leads", leads_path(@export.filters) %> · <%= link_to "All exports", exports_path %></p>
+  <h1>Export: <%= @export.label %> (<%= @export.file_format.upcase %>)</h1>
+
+  <section class="panel" role="status" aria-live="polite">
+    <% if @export.done? %>
+      <p><strong>Ready.</strong> <%= pluralize(@export.row_count, "lead") %> in <%= @export.filename %>.</p>
+      <p><%= link_to "Download #{@export.file_format.upcase}", download_export_path(@export), class: "btn" %></p>
+    <% elsif @export.failed? %>
+      <p><strong>The export failed.</strong> <%= @export.error %></p>
+      <p><%= link_to "Back to leads", leads_path(@export.filters), class: "btn secondary" %></p>
+    <% else %>
+      <p><strong>Building your export…</strong> This page refreshes every few seconds and shows a download link when it is ready.</p>
+    <% end %>
+  </section>
+</main>

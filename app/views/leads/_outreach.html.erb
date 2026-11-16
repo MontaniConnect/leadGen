@@ -1,0 +1,67 @@
+<% send_record = lead.outreach_send %>
+<section class="panel outreach" aria-labelledby="outreach-heading">
+  <h2 id="outreach-heading" class="eyebrow">Outreach</h2>
+
+  <% if send_record.nil? %>
+    <p>Send the connection request on LinkedIn, then record it here. A message variant is picked for you at random, so each variant gets a fair share.</p>
+    <div class="controls">
+      <%= button_to "Mark connection sent", lead_outreach_path(lead, filter_params), method: :post,
+            class: "btn", id: "outreach-next" %>
+    </div>
+
+  <% elsif !send_record.messaged? %>
+    <p>
+      Connection request sent <%= l send_record.connection_sent_at, format: :short %>.
+      <%= send_record.connection_accepted ? "They accepted." : "Not accepted yet." %>
+    </p>
+    <% if send_record.variant %>
+      <p>Message to send: <strong><%= Message::LABEL_NAMES.fetch(send_record.variant) %></strong>
+         (<%= assignment_text(send_record) %>). Copy it below, send it on LinkedIn, then press Mark message sent.</p>
+    <% else %>
+      <p class="none-text">This lead has no drafted messages yet.</p>
+    <% end %>
+
+    <div class="controls">
+      <% if send_record.message %>
+        <%= form_with url: message_sent_lead_outreach_path(lead, filter_params), method: :post,
+              data: { controller: "sent-body", sent_body_source_value: dom_id(send_record.message, :body),
+                      action: "submit->sent-body#capture" } do |form| %>
+          <%= form.hidden_field :sent_body, id: nil, data: { sent_body_target: "field" } %>
+          <%= form.submit "Mark message sent", class: "btn", id: "outreach-next" %>
+        <% end %>
+      <% end %>
+      <%= button_to (send_record.connection_accepted ? "Accepted ✓ (undo)" : "Connection accepted"),
+            accepted_lead_outreach_path(lead, filter_params), method: :patch, class: "btn secondary",
+            aria: { pressed: send_record.connection_accepted.to_s } %>
+      <%= button_to "Undo connection sent", lead_outreach_path(lead, filter_params), method: :delete, class: "btn secondary" %>
+    </div>
+
+    <% if lead.messages.size > 1 %>
+      <%= form_with url: variant_lead_outreach_path(lead, filter_params), method: :patch, class: "field",
+            data: { controller: "autosubmit" } do |form| %>
+        <%= form.label :variant, "Use a different variant" %>
+        <%= form.select :variant, options_for_select(variant_options(lead), send_record.variant), {}, class: "select",
+              data: { action: "change->autosubmit#submit" } %>
+      <% end %>
+    <% end %>
+
+  <% else %>
+    <p>
+      Message sent <%= l send_record.sent_at, format: :short %>:
+      <strong><%= Message::LABEL_NAMES.fetch(send_record.variant) %></strong>, <%= send_record.word_count %> words.
+    </p>
+    <div class="controls">
+      <%= button_to "Undo message sent", message_sent_lead_outreach_path(lead, filter_params), method: :delete,
+            class: "btn secondary", disabled: send_record.replied,
+            title: (send_record.replied ? "A reply is recorded, so this can't be undone." : nil) %>
+    </div>
+  <% end %>
+
+  <%= form_with url: reply_lead_outreach_path(lead, filter_params), method: :patch, class: "field",
+        data: { controller: "autosubmit" } do |form| %>
+    <%= form.label :reply_result, "Reply result" %>
+    <%= form.select :reply_result, options_for_select(reply_options, lead.reply_result.to_s), {}, class: "select",
+          data: { action: "change->autosubmit#submit" } %>
+    <noscript><%= form.submit "Save", class: "btn secondary" %></noscript>
+  <% end %>
+</section>

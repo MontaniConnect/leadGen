@@ -1,0 +1,41 @@
+<% content_for(:title) { "Exports · Leads" } %>
+<main class="page">
+  <p><%= link_to "← Back to leads", root_path %></p>
+  <h1>Exports and reply import</h1>
+
+  <section class="panel" aria-labelledby="import-heading">
+    <h2 id="import-heading">Import reply results</h2>
+    <p>Upload a CSV with an <strong>Apollo Account Id</strong> column and a <strong>Reply Result</strong> column
+       (Replied, Interested, No reply or Not a fit). The exported sheet already has both. Blank cells change nothing.</p>
+    <%= form_with url: import_replies_exports_path, multipart: true, class: "controls" do |form| %>
+      <div class="field">
+        <%= form.label :file, "CSV file" %>
+        <%= form.file_field :file, accept: ".csv,text/csv", class: "select", required: true %>
+      </div>
+      <%= form.submit "Import replies", class: "btn" %>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="recent-heading">
+    <h2 id="recent-heading">Recent exports</h2>
+    <% if @exports.empty? %>
+      <p class="hint">No exports yet. Use the Export control on the lead queue.</p>
+    <% else %>
+      <table>
+        <thead><tr><th>Created</th><th>What</th><th>Format</th><th>Rows</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% @exports.each do |export| %>
+            <tr>
+              <td><%= l export.created_at, format: :short %></td>
+              <td><%= export.label %></td>
+              <td><%= export.file_format.upcase %></td>
+              <td><%= export.row_count %></td>
+              <td><%= export.status.capitalize %></td>
+              <td><%= link_to "Open", export_path(export) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </section>
+</main>

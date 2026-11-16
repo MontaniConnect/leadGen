@@ -1,0 +1,110 @@
+<% evaluation = lead.current_evaluation %>
+<% target = Leads::LinkedinTarget.call(lead) %>
+<% contact = lead.selected_contact %>
+
+<header class="lead-header">
+  <div>
+    <div class="lead-title">
+      <h1><%= lead.name %></h1>
+      <span class="badge large <%= 'warm' unless evaluation.tier == 'Hot' %>"><%= evaluation.tier %></span>
+      <span class="pill">Confidence: <%= evaluation.confidence %></span>
+    </div>
+    <% if website_url(lead) %>
+      <a class="site-link" href="<%= website_url(lead) %>" target="_blank" rel="noopener noreferrer"><%= website_label(lead) %></a>
+    <% end %>
+  </div>
+  <div class="scores">
+    <div class="score-card">
+      <div class="score-label">Staffing fit</div>
+      <div class="score-value"><%= evaluation.staffing_score %><small>/10</small></div>
+    </div>
+    <div class="score-card">
+      <div class="score-label">Automation fit</div>
+      <div class="score-value"><%= evaluation.automation_score %><small>/10</small></div>
+    </div>
+  </div>
+</header>
+
+<div class="columns">
+  <div class="col-left">
+    <section class="panel row" aria-labelledby="contact-heading">
+      <div>
+        <h2 id="contact-heading" class="eyebrow">Contact</h2>
+        <% if contact %>
+          <div class="contact-name"><%= contact.full_name %></div>
+          <div class="contact-title"><%= contact.title %></div>
+        <% else %>
+          <div class="contact-name">No contact found</div>
+        <% end %>
+      </div>
+      <% if target.url %>
+        <%= link_to target.label, target.url, class: "btn", target: "_blank", rel: "noopener noreferrer" %>
+      <% else %>
+        <span class="none-text"><%= target.label %></span>
+      <% end %>
+    </section>
+
+    <% if contact.nil? %>
+      <details class="more">
+        <summary>Add a contact yourself</summary>
+        <%= form_with url: lead_contact_path(lead, filter_params), scope: :contact do |form| %>
+          <p class="hint">Found the right person (for example on LinkedIn)? Add them here. They become this lead's contact and are never replaced automatically.</p>
+          <div class="field"><%= form.label :first_name, "First name" %><%= form.text_field :first_name, class: "select" %></div>
+          <div class="field"><%= form.label :last_name, "Last name" %><%= form.text_field :last_name, class: "select" %></div>
+          <div class="field"><%= form.label :title, "Title" %><%= form.text_field :title, class: "select", placeholder: "e.g. Founder & CEO" %></div>
+          <div class="field"><%= form.label :linkedin_url, "LinkedIn profile link (optional)" %><%= form.url_field :linkedin_url, class: "select", placeholder: "https://www.linkedin.com/in/..." %></div>
+          <%= form.submit "Save contact", class: "btn" %>
+        <% end %>
+      </details>
+    <% end %>
+
+    <section class="panel" aria-labelledby="why-now-heading">
+      <h2 id="why-now-heading" class="eyebrow">Why now</h2>
+      <p><%= evaluation.why_now.presence || "Not found" %></p>
+      <div><%= source_chip(evaluation.why_now_source) %></div>
+    </section>
+
+    <section class="panel" aria-labelledby="signals-heading">
+      <h2 id="signals-heading" class="eyebrow">Top signals</h2>
+      <% if evaluation.signals.blank? %>
+        <p class="none-text">None found.</p>
+      <% else %>
+        <ul class="stack">
+          <% evaluation.signals.each do |signal| %>
+            <li><p><%= signal["signal"] %></p><div><%= source_chip(signal["source"]) %></div></li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section class="panel flags" aria-labelledby="flags-heading">
+      <h2 id="flags-heading" class="eyebrow">Red flags</h2>
+      <% if evaluation.red_flags.blank? %>
+        <p class="none-text">None found.</p>
+      <% else %>
+        <ul class="stack">
+          <% evaluation.red_flags.each do |flag| %>
+            <li><p><%= flag["flag"] %></p><div><%= source_chip(flag["source"]) %></div></li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+  </div>
+
+  <div class="col-right">
+    <div class="messages-head">
+      <h2>Messages</h2>
+      <span class="hint">Send after they accept your connection request</span>
+    </div>
+
+    <% if lead.messages.empty? %>
+      <p class="panel none-text">No drafts yet. Run <code>bin/rails draft:run</code>.</p>
+    <% end %>
+    <% ordered_messages(lead).each_with_index do |message, index| %>
+      <%= render "leads/message", message: message, first: index.zero?,
+            assigned: lead.outreach_send&.variant == message.label %>
+    <% end %>
+
+    <%= render "leads/outreach", lead: lead %>
+  </div>
+</div>
