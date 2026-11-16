@@ -1,0 +1,109 @@
+# Defaults for Setting.get. Any key can be overridden in the database
+# (Setting.set) without a code change or deploy.
+prefilter:
+  min_employees: 10
+  max_employees: 200
+  countries: ["United States", "USA", "US", "United States of America"]
+  excluded_naics_prefixes: ["5613", "561422"]
+  excluded_keywords: ["staffing", "recruiting", "outsourcing", "bpo"]
+  excluded_keyword_fields: ["keywords", "industry"]
+  boost_keywords: ["saas", "software", "automation", "cloud", "platform"]
+  intent_min_score: 50
+  boost_technologies: ["AWS", "Salesforce"]
+  why_now_funding_days: 90
+models:
+  scoring: claude-haiku-5-5
+  drafting: claude-sonnet-5-5
+budget:
+  # Cumulative USD cap on everything recorded (scoring + drafting) plus batches still in flight.
+  # null = not set, and paid runs are BLOCKED until one is set: bin/rails 'budget:cap[25]'
+  spending_cap_usd: null
+pricing:
+  # USD per million tokens (Anthropic list prices, cached 2026-11-03: confirm before relying on them).
+  # Haiku 5.5 is cheaper under 100K tokens per prompt, which every request here is.
+  models:
+    claude-haiku-5-5: { input: 0.10, output: 0.50 }
+    claude-sonnet-5-5: { input: 2.00, output: 10.00 }
+  cache_read_multiplier: 0.1        # x the input price
+  cache_write_multipliers: { "5m": 1.25, "1h": 2.0 }
+  batch_multiplier: 0.5             # Message Batches are half price
+estimates:
+  chars_per_token: 3.0              # deliberately pessimistic: overestimates tokens a little
+  scoring_input_tokens: 6000        # per company not fetched yet (instructions + Apollo + up to 4 pages)
+  scoring_output_tokens: 450        # typical reply incl. thinking at low effort
+  drafting_input_tokens: 5000       # per Hot lead not drafted yet
+  drafting_output_tokens: 900       # typical reply incl. thinking at medium effort
+  hot_share: 0.15                   # ASSUMPTION: share of scored companies that turn out Hot
+  exact_sample_size: 10             # companies counted via the API when using exact counting
+contacts:
+  # Highest priority first. A title takes the first tier it matches (whole-word, case-insensitive).
+  # Contacts matching no tier still qualify, ranked last.
+  title_tiers:
+    - ["ceo", "chief executive", "founder", "co-founder", "cofounder", "owner"]
+    - ["cto", "chief technology", "chief technical"]
+    - ["head of engineering", "vp of engineering", "vp engineering", "vice president of engineering",
+       "director of engineering", "head of operations", "vp of operations", "vp operations",
+       "vice president of operations", "director of operations", "coo", "chief operating"]
+    - ["president", "managing director", "chief", "vice president", "vp", "director", "head of"]
+  # Titles containing these are never selected (e.g. "Assistant to the CEO").
+  excluded_title_words: ["assistant", "intern", "former", "advisor", "ex"]
+fetching:
+  user_agent: "MontaniLeadResearchBot/1.0 (+https://montani.ph)"
+  delay_seconds: 2          # minimum gap between requests to the same domain
+  open_timeout: 5
+  read_timeout: 10
+  max_retries: 2
+  max_redirects: 3
+  max_words: 2000
+  min_words: 40             # pages with less text than this are stored as "empty"
+  refetch_after_days: 30
+scoring:
+  effort: low                      # Haiku thinks adaptively; low keeps token spend down
+  max_tokens: 1500                 # hard cap on output per company
+  cache_ttl: "1h"                  # 1h keeps the shared instructions cached across a long batch
+  batch_size: 500                  # requests per Message Batch
+  prompt_words_per_page: 2000
+  hot_min_score: 7
+  warm_min_score: 5
+  hot_confidences: ["Medium", "High"]
+  confidence_high_min_sources: 5   # useful pages + the Apollo profile (max possible is 5)
+  confidence_medium_min_sources: 3
+drafting:
+  effort: medium
+  max_tokens: 2000
+  max_attempts: 2                  # a full re-draft when a required variant fails validation
+  max_words: 50                    # hard limit enforced by the validator
+  target_words: 45                 # what the model is told to aim for, leaving margin
+  page_words: 600                  # words of each fetched page shown to the drafting model
+  server_side_fallback: false      # opt-in: retry cyber/frontier_llm declines on a fallback model
+  banned_phrases:
+    - "hope this finds you well"
+    - "hope you're doing well"
+    - "hope you are doing well"
+    - "impressive"
+    - "amazing"
+    - "incredible"
+    - "awesome"
+    - "fantastic"
+    - "love what"
+    - "great work"
+    - "big fan"
+export:
+  inline_row_limit: 200            # bigger exports run as a background job
+  keep_days: 7                     # finished exports are deleted after this
+results:
+  min_sample: 30                   # below this many sends a rate is shown as "too few to judge"
+  min_difference_pts: 10           # a suggestion needs at least this many percentage points of gap
+  explore_share: 0.3               # with an approved default, still assign randomly this share of the time
+  max_examples: 3                  # approved past messages shown to the drafting model
+  example_candidates: 10
+  size_bands:
+    - { label: "10-24", min: 10, max: 24 }
+    - { label: "25-49", min: 25, max: 49 }
+    - { label: "50-99", min: 50, max: 99 }
+    - { label: "100-200", min: 100, max: 200 }
+  # Labels for the contact.title_tiers in order, then the catch-all.
+  title_labels: ["CEO / Founder", "CTO", "Head of Engineering / Operations", "Other senior", "Other"]
+learning:
+  approved_defaults: {}            # { "tier:Hot" => "curious_question" }: set by a person on the Results page
+  approved_example_ids: []         # sends whose message a person approved as a drafting example

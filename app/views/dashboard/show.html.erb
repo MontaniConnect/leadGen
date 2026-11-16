@@ -1,0 +1,53 @@
+<main class="page">
+<h1>Prefilter</h1>
+
+<p>
+  <%= link_to "Pass: #{@status_counts.fetch('pass', 0)}", dashboard_path(status: "pass") %> ·
+  <%= link_to "Fail: #{@status_counts.fetch('fail', 0)}", dashboard_path(status: "fail") %> ·
+  Pending: <%= @status_counts.fetch("pending", 0) %> ·
+  <%= link_to "All", dashboard_path %>
+</p>
+
+<h2>Contacts (passed companies)</h2>
+<p>
+  Selected: <%= @contact_counts.fetch("selected", 0) %> ·
+  Not found (about-page fallback queue): <%= @contact_counts.fetch("not_found", 0) %> ·
+  Not yet selected: <%= @contact_counts.fetch("pending", 0) %>
+</p>
+
+<h2>Fail reasons</h2>
+<% if @reason_counts.empty? %>
+  <p>No failures yet. Run <code>bin/rails prefilter:run</code>.</p>
+<% else %>
+  <table>
+    <thead><tr><th>Reason</th><th>Companies</th></tr></thead>
+    <tbody>
+      <% @reason_counts.each do |reason, count| %>
+        <tr>
+          <td><%= link_to reason, dashboard_path(status: "fail", reason: reason) %></td>
+          <td><%= count %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<h2>Companies (first <%= DashboardController::LIST_LIMIT %>)</h2>
+<table>
+  <thead><tr><th>Company</th><th>Employees</th><th>Country</th><th>Result</th><th>Why</th><th>Contact</th></tr></thead>
+  <tbody>
+    <% @companies.each do |company| %>
+      <tr>
+        <td><%= company.name %></td>
+        <td><%= company.employees %></td>
+        <td><%= company.country %></td>
+        <td><%= company.prefilter_status.capitalize %></td>
+        <td><%= (company.prefilter_status == "fail" ? company.prefilter_reasons : company.prefilter_boosts).join(", ") %></td>
+        <td><%= contact_label(company) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p><%= link_to "Back to leads", root_path %></p>
+</main>

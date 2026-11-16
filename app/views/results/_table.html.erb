@@ -1,0 +1,21 @@
+<section aria-labelledby="<%= id %>-heading" class="results-block">
+  <h2 id="<%= id %>-heading"><%= title %></h2>
+  <% if note %><p class="hint"><%= note %></p><% end %>
+  <% if rows.empty? %>
+    <p class="hint">No messages sent yet.</p>
+  <% else %>
+    <table>
+      <thead><tr><th><%= column %></th><th>Messages sent</th><th>Replied</th><th>Positive reply</th></tr></thead>
+      <tbody>
+        <% rows.each do |row| %>
+          <tr>
+            <td><%= row.label %></td>
+            <td><%= row.sent.total %></td>
+            <td><%= rate_text(row.reply, report) %></td>
+            <td><%= rate_text(row.positive, report) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</section>

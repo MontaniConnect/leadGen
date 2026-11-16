@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["staffing_score", "automation_score", "top_signals", "red_flags", "offshore_signal", "why_now", "why_now_source", "lead_with", "disqualified"],
+  "properties": {
+    "staffing_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "automation_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "top_signals": {
+      "type": "array", "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["signal", "source"],
+        "properties": { "signal": { "type": "string", "maxLength": 240 }, "source": { "type": "string", "maxLength": 300 } }
+      }
+    },
+    "red_flags": {
+      "type": "array", "maxItems": 4,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["flag", "source"],
+        "properties": { "flag": { "type": "string", "maxLength": 240 }, "source": { "type": "string", "maxLength": 300 } }
+      }
+    },
+    "offshore_signal": { "type": "string", "maxLength": 240 },
+    "why_now": { "type": "string", "maxLength": 240 },
+    "why_now_source": { "type": "string", "maxLength": 300 },
+    "lead_with": { "type": "string", "maxLength": 240 },
+    "disqualified": { "type": "boolean" }
+  }
+}

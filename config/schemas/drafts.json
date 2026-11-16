@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["founder_time_evidence", "variants"],
+  "properties": {
+    "founder_time_evidence": { "type": "string", "maxLength": 400 },
+    "variants": {
+      "type": "array", "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["label", "observation", "body"],
+        "properties": {
+          "label": { "type": "string", "enum": ["curious_question", "founder_time", "low_pressure_offer"] },
+          "observation": { "type": "string", "maxLength": 400 },
+          "body": { "type": "string", "maxLength": 700 }
+        }
+      }
+    }
+  }
+}

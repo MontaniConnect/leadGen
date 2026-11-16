@@ -1,0 +1,82 @@
+<aside class="queue" aria-label="Lead queue">
+  <div>
+    <div class="eyebrow">Queue</div>
+    <h1><%= queue.tier %> leads (<%= queue_companies.size %>)</h1>
+  </div>
+
+  <nav class="filters" aria-label="Filter leads">
+    <% Leads::Queue::TIERS.each do |tier| %>
+      <%= link_to tier, leads_path(filter_params.merge(tier: tier)), class: "filter",
+            aria: { current: (queue.tier == tier).to_s } %>
+    <% end %>
+    <% toggled = queue.to_contact? ? filter_params.except(:status) : filter_params.merge(status: "to_contact") %>
+    <%= link_to "To contact", leads_path(toggled), class: "filter", aria: { current: queue.to_contact?.to_s } %>
+  </nav>
+
+  <% extra_active = queue.status || queue.reply || queue.batch %>
+  <details class="more" <%= "open" if extra_active %>>
+    <summary>More filters</summary>
+    <%= form_with url: leads_path, method: :get do |form| %>
+      <%= form.hidden_field :tier, value: queue.tier, id: nil %>
+      <div class="field">
+        <%= form.label :status, "Status" %>
+        <%= form.select :status, [ [ "Any", "" ], [ "To contact", "to_contact" ], [ "Connection sent", "sent" ] ],
+              { selected: queue.status.to_s }, class: "select" %>
+      </div>
+      <div class="field">
+        <%= form.label :reply, "Reply result" %>
+        <%= form.select :reply, [ [ "Any", "" ], [ "Not recorded", Leads::Queue::NO_REPLY ] ] + Company::REPLY_RESULTS.map { |key, label| [ label, key ] },
+              { selected: queue.reply.to_s }, class: "select" %>
+      </div>
+      <div class="field">
+        <%= form.label :batch, "Import batch" %>
+        <%= form.select :batch, [ [ "Any", "" ] ] + import_batch_options, { selected: queue.batch.to_s }, class: "select" %>
+      </div>
+      <%= form.submit "Apply filters", class: "btn secondary", name: nil %>
+    <% end %>
+  </details>
+
+  <details class="more">
+    <summary>Export</summary>
+    <%= form_with url: exports_path do |form| %>
+      <% queue.filters.except(:tier).merge(tier: queue.tier).each do |name, value| %>
+        <%= form.hidden_field name, value: value, id: nil %>
+      <% end %>
+      <div class="field">
+        <%= form.label :scope, "What to export" %>
+        <%= form.select :scope, [ [ "Current view (#{pluralize(queue.count, "lead")})", "view" ], [ "All scored leads", "all" ] ],
+              {}, class: "select" %>
+      </div>
+      <div class="field">
+        <%= form.label :file_format, "Format" %>
+        <%= form.select :file_format, [ [ "CSV", "csv" ], [ "XLSX (Excel)", "xlsx" ] ], {}, class: "select" %>
+      </div>
+      <%= form.submit "Export", class: "btn", name: nil %>
+    <% end %>
+    <p class="hint" style="padding: 0 14px 14px;"><%= link_to "Past exports and reply import", exports_path %></p>
+  </details>
+
+  <% if queue_companies.empty? %>
+    <p class="hint">No <%= queue.tier.downcase %> leads<%= " left to contact" if queue.to_contact? %>.</p>
+  <% else %>
+    <ul class="cards">
+      <% queue_companies.each do |company| %>
+        <% evaluation = company.current_evaluation %>
+        <li>
+          <%= link_to lead_path(company, filter_params), class: "card-link",
+                aria: { current: (company == lead ? "page" : nil) } do %>
+            <span class="card-row">
+              <span class="card-name"><%= company.name %></span>
+              <span class="badge <%= 'warm' unless evaluation.tier == 'Hot' %>"><%= evaluation.tier %></span>
+            </span>
+            <span class="card-meta">Staffing <%= evaluation.staffing_score %> · Automation <%= evaluation.automation_score %></span>
+            <span class="card-meta"><%= company.lead_status %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <p class="shortcuts">Shortcuts: J / K next or previous, C copy first message, S mark sent</p>
+  <p class="queue-footer"><%= link_to "Prefilter dashboard", dashboard_path %> · <%= link_to "Results", results_path %> · <%= link_to "Spend", spend_path %></p>
+</aside>
