@@ -15,16 +15,19 @@ module Fetching
       @clock = clock
     end
 
-    def call(company)
+    # force: page kinds to re-fetch even if fetched recently (used to re-read an About page for a leader).
+    # kinds: which discovered pages to fetch besides the home page.
+    def call(company, force: [], kinds: %w[about careers blog])
       base = base_url(company)
       return Outcome.new(0, 0, nil) unless base
 
       fetcher = @page_fetcher_factory.call
       @fetched = 0
       @skipped = 0
+      @force = force
       home, = fetch_kind(company, "home", base, fetcher)
       about_html = nil
-      home.discovered_urls.slice("about", "careers", "blog").each do |kind, url|
+      home.discovered_urls.slice(*kinds).each do |kind, url|
         page, html = fetch_kind(company, kind, url, fetcher)
         about_html = html if kind == "about" && page.status == "ok"
       end
@@ -51,7 +54,7 @@ module Fetching
     # Returns [page, html_or_nil]. A fresh page is reused and html is nil.
     def fetch_kind(company, kind, url, fetcher)
       page = company.pages.find_or_initialize_by(kind: kind)
-      if page.fresh?(days: @refetch_days, now: @clock.call)
+      if !@force.include?(kind) && page.fresh?(days: @refetch_days, now: @clock.call)
         @skipped += 1
         return [ page, nil ]
       end

@@ -9,7 +9,10 @@
 
   <main class="detail">
     <% if @lead.nil? %>
-      <p class="empty">Nothing to review here yet. Run scoring and drafting, or change the filter.</p>
+      <p class="empty">
+        Nothing to review here yet. <%= link_to "Import your Apollo file", new_import_path %> to start,
+        then run scoring and drafting, or change the filter.
+      </p>
     <% else %>
       <%= render "leads/lead", lead: @lead %>
     <% end %>

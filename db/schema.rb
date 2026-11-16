@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_16_030855) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_16_063830) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,10 +52,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_030855) do
     t.bigint "selected_contact_id"
     t.datetime "connection_sent_at"
     t.string "reply_result"
+    t.string "name_key"
+    t.datetime "contact_researched_at"
+    t.string "contact_research_result"
+    t.datetime "partner_dismissed_at"
     t.index ["apollo_account_id"], name: "index_companies_on_apollo_account_id", unique: true
     t.index ["contact_status"], name: "index_companies_on_contact_status"
     t.index ["domain"], name: "index_companies_on_domain"
     t.index ["import_batch_id"], name: "index_companies_on_import_batch_id"
+    t.index ["name_key"], name: "index_companies_on_name_key"
     t.index ["prefilter_status"], name: "index_companies_on_prefilter_status"
     t.index ["reply_result"], name: "index_companies_on_reply_result"
     t.index ["selected_contact_id"], name: "index_companies_on_selected_contact_id"
@@ -200,6 +205,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_030855) do
     t.datetime "finished_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["kind"], name: "index_pipeline_runs_one_active_per_kind", unique: true, where: "(((status)::text = 'running'::text) AND ((kind)::text = ANY ((ARRAY['score'::character varying, 'draft'::character varying])::text[])))"
   end
 
   create_table "scoring_batches", force: :cascade do |t|

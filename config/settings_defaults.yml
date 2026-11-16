@@ -3,7 +3,10 @@
 prefilter:
   min_employees: 10
   max_employees: 200
-  countries: ["United States", "USA", "US", "United States of America"]
+  # US plus the English-speaking markets (the owner's choice). Matching ignores case. "UK" is an alias
+  # in case an export abbreviates; Apollo itself writes "United Kingdom".
+  countries: ["United States", "USA", "US", "United States of America",
+              "Canada", "United Kingdom", "UK", "Australia", "New Zealand"]
   excluded_naics_prefixes: ["5613", "561422"]
   excluded_keywords: ["staffing", "recruiting", "outsourcing", "bpo"]
   excluded_keyword_fields: ["keywords", "industry"]
@@ -33,7 +36,8 @@ estimates:
   scoring_output_tokens: 450        # typical reply incl. thinking at low effort
   drafting_input_tokens: 5000       # per Hot lead not drafted yet
   drafting_output_tokens: 900       # typical reply incl. thinking at medium effort
-  hot_share: 0.15                   # ASSUMPTION: share of scored companies that turn out Hot
+  drafted_share: 0.6                # ASSUMPTION: share of scored companies in a drafted tier (Hot + Warm); only used before scoring
+  partner_output_tokens: 500        # typical partnership reply incl. thinking
   exact_sample_size: 10             # companies counted via the API when using exact counting
 contacts:
   # Highest priority first. A title takes the first tier it matches (whole-word, case-insensitive).
@@ -59,7 +63,7 @@ fetching:
   refetch_after_days: 30
 scoring:
   effort: low                      # Haiku thinks adaptively; low keeps token spend down
-  max_tokens: 1500                 # hard cap on output per company
+  max_tokens: 3000                 # hard cap on output per company (thinking counts toward it; 1500 truncated one reply)
   cache_ttl: "1h"                  # 1h keeps the shared instructions cached across a long batch
   batch_size: 500                  # requests per Message Batch
   prompt_words_per_page: 2000
@@ -69,6 +73,7 @@ scoring:
   confidence_high_min_sources: 5   # useful pages + the Apollo profile (max possible is 5)
   confidence_medium_min_sources: 3
 drafting:
+  tiers: ["Hot", "Warm"]           # which tiers get messages drafted (Cold and disqualified never do)
   effort: medium
   max_tokens: 2000
   max_attempts: 2                  # a full re-draft when a required variant fails validation
@@ -107,3 +112,6 @@ results:
 learning:
   approved_defaults: {}            # { "tier:Hot" => "curious_question" }: set by a person on the Results page
   approved_example_ids: []         # sends whose message a person approved as a drafting example
+imports:
+  max_upload_mb: 25
+  max_sample_rows: 500

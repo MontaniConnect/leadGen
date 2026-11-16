@@ -14,6 +14,7 @@ module Drafting
         Company: #{company.name} (#{company.website.presence || company.domain})
         Contact first name: #{contact_first_name(company)}
         Contact title: #{company.selected_contact&.title.presence || 'Not found'}
+        #{facts(company)}
 
         <assessment>
         Strongest signals:
@@ -32,6 +33,15 @@ module Drafting
     end
 
     private
+
+    # What Apollo knows about the company, so the message can name where they are, how big, and what they do.
+    def facts(company)
+      {
+        "Industry" => company.industry, "Employees" => company.employees,
+        "Location" => [ company.city, company.state, company.country ].compact_blank.join(", "),
+        "What they do (Apollo)" => company.short_description, "Technologies" => company.technologies
+      }.filter_map { |label, value| "#{label}: #{value.to_s.squish.truncate(400)}" if value.present? }.join("\n")
+    end
 
     def contact_first_name(company)
       company.selected_contact&.first_name.presence || "none"

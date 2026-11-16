@@ -6,6 +6,14 @@ module Fetching
   class SiteContactExtractor
     NAME = /\A[[:upper:]][[:alpha:]'’.-]+(?: [[:upper:]][[:alpha:]'’.-]+){1,2}\z/
     LEAF_BLOCKS = "h1, h2, h3, h4, h5, h6, p, li, div, span, strong, b".freeze
+    # Words that mean a block of text is a page element or heading, not a person ("Check Mentoring Programs",
+    # "Meet Our Team", "Read More"). A candidate name containing any of these is rejected.
+    NON_NAME_WORDS = %w[
+      programs program services service solutions products product team teams group groups company companies
+      mentoring mentor mentors careers career contact about us our view read learn check join meet see get
+      staff leadership board advisors advisory partners partner investors portfolio news blog resources
+      support sales marketing engineering operations management overview welcome home click more now
+    ].freeze
     MAX_TITLE_LENGTH = 60
     ACCEPTED_TIERS = 3 # CEO/founder, CTO, head of engineering/operations
 
@@ -52,7 +60,7 @@ module Fetching
     end
 
     def build(name, title)
-      return nil unless name.to_s.match?(NAME) && !title_like?(name)
+      return nil unless name.to_s.match?(NAME) && !title_like?(name) && !page_element?(name)
       return nil unless title.present? && title.length <= MAX_TITLE_LENGTH
 
       rank = @ranker.rank(title)
@@ -60,6 +68,11 @@ module Fetching
 
       first, *rest = name.split
       { first_name: first, last_name: rest.join(" "), title: title, rank: rank }
+    end
+
+    # "Check Mentoring Programs" or "Meet Our Team" are page elements, not people.
+    def page_element?(text)
+      text.to_s.downcase.split.any? { |word| NON_NAME_WORDS.include?(word.delete(".,")) }
     end
 
     # "Chief Executive Officer" or "Our Founder" must not be mistaken for a person's name.

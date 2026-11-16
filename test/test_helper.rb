@@ -7,6 +7,7 @@ require_relative "support/drafting_test_helper"
 require_relative "support/leads_test_helper"
 require_relative "support/xlsx_reader"
 require_relative "support/outreach_test_helper"
+require_relative "support/partner_test_helper"
 
 module ActiveSupport
   class TestCase

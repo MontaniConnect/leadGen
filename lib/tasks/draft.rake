@@ -12,4 +12,14 @@ namespace :draft do
   rescue Budget::Guard::CapReached => e
     abort e.message
   end
+
+  desc "Draft partnership messages for staffing firms: bin/rails 'draft:partners[limit]'. Halts at the spending cap."
+  task :partners, [ :limit ] => :environment do |_, args|
+    Pipeline::PartnerDraftingRun.new(gateway: Scoring::AnthropicGateway.from_environment, limit: args[:limit]&.to_i).call
+  end
+
+  desc "Re-draft messages written with an older prompt (unedited drafts only). Halts at the spending cap."
+  task redraft: :environment do
+    Pipeline::Redraft.new(gateway: Scoring::AnthropicGateway.from_environment).call
+  end
 end

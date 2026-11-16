@@ -50,9 +50,9 @@ module Budget
     def drafting_stage(scope, scoring, limit, batch)
       ids = scope.select(:id)
       real = Company.awaiting_drafts.where(id: ids).includes(:pages, :selected_contact, :evaluations).order(:id).limit(limit).to_a
-      expected_hot = (scoring.companies * Setting.get("estimates.hot_share").to_f).ceil
+      expected_drafted = (scoring.companies * Setting.get("estimates.drafted_share").to_f).ceil
       build_stage("Drafting", Setting.get("models.drafting"), real.map { |company| @drafting_builder.call(company) },
-                  expected_hot, Setting.get("estimates.drafting_input_tokens"), Setting.get("estimates.drafting_output_tokens"),
+                  expected_drafted, Setting.get("estimates.drafting_input_tokens"), Setting.get("estimates.drafting_output_tokens"),
                   Setting.get("drafting.max_tokens"), @drafting_builder.system_text, batch)
     end
 

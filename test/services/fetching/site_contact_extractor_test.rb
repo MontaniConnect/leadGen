@@ -35,4 +35,18 @@ class Fetching::SiteContactExtractorTest < ActiveSupport::TestCase
   test "returns nil when nothing is clear" do
     assert_nil extract("<p>We are a friendly team that loves software.</p>")
   end
+
+  test "page elements and headings are never taken for a person's name (a real false positive from live data)" do
+    assert_nil extract("<a>Check Mentoring Programs</a><p>Founder</p>")
+    assert_nil extract("<h3>Meet Our Team</h3><p>CEO</p>")
+    assert_nil extract("<p>Read More, CEO</p>")
+    assert_nil extract("<h2>Client Services</h2><p>Founder &amp; CEO</p>")
+  end
+
+  test "real names, including middle initials, credentials and hyphens, are still found" do
+    assert_equal "Berry", extract("<h3>Phillip Berry</h3><p>CEO</p>")[:last_name]
+    assert_equal "Holland", extract("<p>Bo Holland, Founder &amp; CEO</p>")[:last_name]
+    assert_equal "Woods PT", extract("<h3>Cassandra Woods PT</h3><p>CEO</p>")[:last_name]
+    assert_equal "Smith-Jones", extract("<p>Ana Smith-Jones - CTO</p>")[:last_name]
+  end
 end

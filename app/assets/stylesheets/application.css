@@ -129,6 +129,20 @@ a.chip:hover { text-decoration: underline; color: var(--teal-dark); }
 .page .stack li { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .page .stack li.panel { flex-direction: column; align-items: flex-start; gap: 6px; }
 
+/* Import form */
+.import-form { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+.import-form fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin: 0; }
+.import-form legend { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 0 6px; }
+.field label.choice, .choice { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 8px 0; font-size: 14px; font-weight: 400; color: var(--text); text-transform: none; }
+.choice input { margin-top: 2px; width: 20px; height: 20px; flex: none; accent-color: var(--teal); }
+.page .panel { margin-top: 16px; }
+.indent { margin-left: 28px; }
+
+/* Pipeline panel */
+.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.steps li { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 14px; }
+.steps .hint { margin: 0; }
+
 /* Flash messages */
 .flash { padding: 12px 20px; font-size: 14px; white-space: pre-line; border-bottom: 1px solid var(--border); background: var(--teal-pale); color: var(--teal-dark); }
 .flash.alert { background: #FBEAE4; color: var(--danger-text); }

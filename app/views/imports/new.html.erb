@@ -1,0 +1,80 @@
+<% content_for(:title) { "Import · Leads" } %>
+<main class="page">
+  <p><%= link_to "← Back to leads", root_path %></p>
+  <h1>Import Apollo files</h1>
+  <p class="hint">
+    Importing is free: it reads the file, applies the filter rules and shows what passed and why the rest failed.
+    Nothing is sent to anyone, and no paid calls are made. Importing the same file again never creates duplicates.
+    <% if @companies.positive? %>You have <strong><%= number_with_delimiter(@companies) %></strong> companies so far.<% end %>
+  </p>
+
+  <section class="panel" aria-labelledby="accounts-heading">
+    <h2 id="accounts-heading">1. Accounts export</h2>
+    <p>The Apollo accounts CSV (company name, employees, country, website, technologies, keywords and so on).</p>
+    <%= form_with url: import_accounts_path, multipart: true, class: "import-form" do |form| %>
+      <div class="field">
+        <%= form.label :file, "Apollo accounts CSV", for: "accounts_file" %>
+        <%= form.file_field :file, accept: ".csv,text/csv", class: "select", required: true, id: "accounts_file" %>
+      </div>
+
+      <fieldset class="field">
+        <legend>How much to import</legend>
+        <label class="choice">
+          <%= form.radio_button :mode, "sample", checked: true %>
+          A random sample first (recommended). Check the Pass/Fail decisions by hand, tune the rules, then import everything.
+        </label>
+        <div class="field indent">
+          <%= form.label :sample_size, "Rows in the sample" %>
+          <%= form.number_field :sample_size, value: ImportsController::DEFAULT_SAMPLE, min: 1,
+                max: Setting.get("imports.max_sample_rows"), class: "select" %>
+        </div>
+        <label class="choice">
+          <%= form.radio_button :mode, "all" %>
+          All rows
+        </label>
+      </fieldset>
+
+      <%= form.submit "Import accounts", class: "btn", data: { turbo_submits_with: "Importing… this can take up to 15 seconds" } %>
+    <% end %>
+  </section>
+
+  <section class="panel" aria-labelledby="people-heading">
+    <h2 id="people-heading">2. People export (optional)</h2>
+    <p>The Apollo people CSV with first name, last name, title and LinkedIn URL. It is matched to companies by Apollo Account Id,
+       so import the accounts first. Contacts are chosen by title: CEO or founder, then CTO, then heads of engineering or operations.</p>
+    <%= form_with url: import_people_path, multipart: true, class: "import-form" do |form| %>
+      <div class="field">
+        <%= form.label :file, "Apollo people CSV", for: "people_file" %>
+        <%= form.file_field :file, accept: ".csv,text/csv", class: "select", required: true, id: "people_file" %>
+      </div>
+      <%= form.submit "Import people", class: "btn", data: { turbo_submits_with: "Importing…" } %>
+    <% end %>
+  </section>
+
+  <section aria-labelledby="recent-heading">
+    <h2 id="recent-heading">Recent imports</h2>
+    <% if @batches.empty? %>
+      <p class="hint">Nothing imported yet.</p>
+    <% else %>
+      <table>
+        <thead><tr><th>When</th><th>File</th><th>Type</th><th>Rows</th><th>New</th><th>Updated</th><th>Skipped</th><th>Why skipped</th></tr></thead>
+        <tbody>
+          <% @batches.each do |batch| %>
+            <tr>
+              <td><%= l batch.created_at, format: :short %></td>
+              <td><%= batch.filename %></td>
+              <td><%= batch.kind %></td>
+              <td><%= batch.rows_total %></td>
+              <td><%= batch.rows_created %></td>
+              <td><%= batch.rows_updated %></td>
+              <td><%= batch.rows_skipped %></td>
+              <td><%= batch.skip_reasons.map { |reason, count| "#{reason.tr('_', ' ')}: #{count}" }.join(", ") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </section>
+
+  <p class="hint">Next: fetching pages, scoring and drafting run from the command line for now (see docs/PILOT.md).</p>
+</main>

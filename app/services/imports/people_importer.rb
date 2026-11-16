@@ -17,6 +17,9 @@ module Imports
       @rows.each { |line, row| import_row(tally, line, row) }
       tally.apply_to(batch)
       batch
+    rescue StandardError
+      batch&.update(status: "failed")
+      raise
     end
 
     private

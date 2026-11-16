@@ -26,7 +26,7 @@ class Outreach::DraftingExamplesTest < ActiveSupport::TestCase
   test "with no approved examples the drafting prompt is exactly what it was before" do
     builder = Drafting::RequestBuilder.new
     assert_equal Drafting::Prompt::SYSTEM.sub("{TARGET_WORDS}", "45"), builder.system_text
-    assert_equal "v1", builder.prompt_version
+    assert_equal "v2", builder.prompt_version
   end
 
   test "approved examples are added to the cached instructions, anonymised, and change the prompt version" do
@@ -38,7 +38,7 @@ class Outreach::DraftingExamplesTest < ActiveSupport::TestCase
     assert_includes text, "MESSAGES THAT EARNED POSITIVE REPLIES"
     assert_includes text, "\"Hi <first name>, how do you split support work?\""
     assert_includes text, "write fresh wording, and use only facts from the lead"
-    assert_match(/\Av1\+ex[0-9a-f]{6}\z/, builder.prompt_version)
+    assert_match(/\Av2\+ex[0-9a-f]{6}\z/, builder.prompt_version)
     assert_equal({ type: "ephemeral", ttl: "1h" }, request[:system_].first[:cache_control])
   end
 
@@ -53,7 +53,7 @@ class Outreach::DraftingExamplesTest < ActiveSupport::TestCase
     drafter = Drafting::CompanyDrafter.new(gateway: FakeGateway.new(replies: [ reply(drafts) ]))
     run = drafter.call(company)
 
-    assert_match(/\Av1\+ex/, run.prompt_version)
+    assert_match(/\Av2\+ex/, run.prompt_version)
     assert_equal run.prompt_version, company.messages.first.prompt_version
   end
 

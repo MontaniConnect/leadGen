@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["observation", "body"],
+  "properties": {
+    "observation": { "type": "string", "maxLength": 400 },
+    "body": { "type": "string", "maxLength": 700 }
+  }
+}

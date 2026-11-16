@@ -24,9 +24,25 @@ class Company < ApplicationRecord
                     .where.not(id: Evaluation.where(status: "ok").select(:company_id))
   }
 
-  # The company's latest successful evaluation is Hot.
-  scope :hot, -> { where(id: Evaluation.current.where(tier: "Hot").select(:company_id)) }
-  scope :awaiting_drafts, -> { hot.where.not(id: DraftRun.where(status: "ok").select(:company_id)) }
+  # The company's latest successful evaluation is in one of these tiers.
+  scope :in_tiers, ->(tiers) { where(id: Evaluation.current.where(tier: tiers).select(:company_id)) }
+  scope :hot, -> { in_tiers("Hot") }
+  # Leads that get messages drafted: the tiers in drafting.tiers (Hot and Warm by default).
+  scope :draftable, -> { in_tiers(Setting.get("drafting.tiers")) }
+  scope :awaiting_drafts, -> { draftable.where.not(id: DraftRun.where(status: "ok").select(:company_id)) }
+
+  before_save { self.name_key = Imports::NameKey.call(name) if name_changed? || name_key.blank? }
+
+  # Staffing, recruiting and outsourcing firms: the ones the filter excluded for that reason, and the ones the
+  # scorer flagged as competitors. They are not sales leads; they get a partnership message instead.
+  scope :partner_candidates, lambda {
+    excluded = where(prefilter_status: "fail").where("prefilter_reasons::text LIKE ?", "%excluded_%")
+    competitor = where(id: Evaluation.current.where(disqualified: true).select(:company_id))
+    excluded.or(competitor).where(partner_dismissed_at: nil)
+  }
+  # Removed from the Partners list by a person ("not a staffing firm"); can be restored.
+  scope :partner_dismissed, -> { where.not(partner_dismissed_at: nil) }
+  scope :awaiting_partner_drafts, -> { partner_candidates.where.not(id: Message.where(label: "partnership").select(:company_id)) }
 
   validates :name, presence: true
   validates :apollo_account_id, uniqueness: true, allow_nil: true

@@ -18,10 +18,10 @@ class Drafting::CompanyDrafterTest < ActiveSupport::TestCase
     assert_equal [ { fallbacks: false } ], gateway.options
   end
 
-  test "skips a company that is not Hot, or already drafted, without any API call" do
+  test "skips a Cold company, or one already drafted, without any API call" do
     gateway = FakeGateway.new(replies: [ reply(drafts) ])
-    warm = hot_company(name: "Warm", tier: "Warm")
-    assert_nil drafter(gateway).call(warm)
+    cold = hot_company(name: "Cold", tier: "Cold")
+    assert_nil drafter(gateway).call(cold)
 
     drafter(gateway).call(@company)
     assert_nil drafter(FakeGateway.new).call(@company)
@@ -85,5 +85,27 @@ class Drafting::CompanyDrafterTest < ActiveSupport::TestCase
     ).first
     assert_equal :default, body[:fallbacks]
     assert_equal "json_schema", body[:output_config][:format][:type]
+  end
+
+  test "Warm leads are drafted too, because drafting.tiers is Hot and Warm" do
+    warm = hot_company(name: "Warm", tier: "Warm")
+    gateway = FakeGateway.new(replies: [ reply(drafts) ])
+    assert_equal "ok", drafter(gateway).call(warm).status
+    assert_equal 2, warm.messages.count
+    assert_includes Company.awaiting_drafts, @company
+    assert_not_includes Company.awaiting_drafts, warm
+  end
+
+  test "the drafted tiers are a setting, so Warm can be switched off again" do
+    Setting.set("drafting.tiers", [ "Hot" ])
+    warm = hot_company(name: "Warm", tier: "Warm")
+    assert_nil drafter(FakeGateway.new).call(warm)
+    assert_not_includes Company.awaiting_drafts, warm
+  end
+
+  test "a disqualified competitor is Cold and never drafted for" do
+    competitor = hot_company(name: "Competitor", tier: "Cold")
+    competitor.current_evaluation.update!(disqualified: true)
+    assert_not_includes Company.awaiting_drafts, competitor
   end
 end

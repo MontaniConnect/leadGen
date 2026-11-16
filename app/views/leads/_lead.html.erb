@@ -44,6 +44,20 @@
       <% end %>
     </section>
 
+    <% if contact.nil? %>
+      <details class="more">
+        <summary>Add a contact yourself</summary>
+        <%= form_with url: lead_contact_path(lead, filter_params), scope: :contact do |form| %>
+          <p class="hint">Found the right person (for example on LinkedIn)? Add them here. They become this lead's contact and are never replaced automatically.</p>
+          <div class="field"><%= form.label :first_name, "First name" %><%= form.text_field :first_name, class: "select" %></div>
+          <div class="field"><%= form.label :last_name, "Last name" %><%= form.text_field :last_name, class: "select" %></div>
+          <div class="field"><%= form.label :title, "Title" %><%= form.text_field :title, class: "select", placeholder: "e.g. Founder & CEO" %></div>
+          <div class="field"><%= form.label :linkedin_url, "LinkedIn profile link (optional)" %><%= form.url_field :linkedin_url, class: "select", placeholder: "https://www.linkedin.com/in/..." %></div>
+          <%= form.submit "Save contact", class: "btn" %>
+        <% end %>
+      </details>
+    <% end %>
+
     <section class="panel" aria-labelledby="why-now-heading">
       <h2 id="why-now-heading" class="eyebrow">Why now</h2>
       <p><%= evaluation.why_now.presence || "Not found" %></p>

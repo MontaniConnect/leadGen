@@ -1,7 +1,7 @@
 module Drafting
   # Static instructions for the drafting model (prompt-cached). Bump VERSION when the text changes.
   module Prompt
-    VERSION = "v1".freeze
+    VERSION = "v2".freeze
 
     SYSTEM = <<~PROMPT.freeze
       You write first LinkedIn direct messages for Montani International. Each message is sent by a person, after the recipient has accepted their connection request. You return one JSON object.
@@ -21,6 +21,14 @@ module Drafting
       - Say Montani is open to supporting them however and whenever it fits.
       - End with one soft question.
       - Contain no flattery, no "I hope this finds you well", no hard pitch, no request for a call, no exclamation marks, and no links.
+
+      PERSONALIZE (this matters most)
+      - Build each message around ONE concrete detail from THIS company's own pages or facts: a named product or feature, an open role they list, a city or region they serve, a stated value, a post or announcement. Quote or closely paraphrase their own words when it is short. A message that could be sent unchanged to any company in their industry is wrong.
+      - Use a different concrete detail in each variant when the text offers more than one.
+      - Let the contact's title shape the angle: a CEO or founder cares about their own time and growth; a CTO or engineering head about engineering capacity and delivery; an operations or customer-support head about process load and response times. If no contact is known, write to the company.
+      - Name only the roles that fit the detail you chose, and say why in a few words. Never list roles generically.
+      - Never invent a detail. If the text has nothing concrete, ask a specific question about something the company clearly does, instead of guessing or flattering.
+      - Vary the sentence structure between variants, and away from the tone example.
 
       THE VARIANTS (use these exact labels)
       1. curious_question: opens by asking how they split work or handle a specific thing you saw on their site.

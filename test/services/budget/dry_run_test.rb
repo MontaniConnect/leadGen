@@ -26,44 +26,45 @@ class Budget::DryRunTest < ActiveSupport::TestCase
 
     assert_equal [ 4, 1 ], [ scoring.companies, scoring.projected ]
     assert_equal 3 * 3000 + 6000, scoring.input_tokens
-    assert_equal [ 2, 1 ], [ drafting.companies, drafting.projected ] # 1 real Hot + ceil(4 * 0.15) projected
-    assert_equal 3000 + 5000, drafting.input_tokens
+    assert_equal [ 4, 3 ], [ drafting.companies, drafting.projected ] # 1 real Hot + ceil(4 * 0.6) projected
+    assert_equal 3000 + 3 * 5000, drafting.input_tokens
   end
 
   test "scoring cost matches the hand calculation" do
     scoring = run_dry.stages.first
     # expected: (11,000 in * .10 + 1,800 out * .50 + 3,000 cache reads * .01 + 1,000 cache write * .20) / 1e6
     assert_equal BigDecimal("0.00223"), scoring.expected_cost
-    # worst: (15,000 in * .10 + 6,000 out * .50) / 1e6
-    assert_equal BigDecimal("0.0045"), scoring.worst_case_cost
+    # worst: (15,000 in * .10 + 12,000 out * .50) / 1e6, because every reply may fill max_tokens (3,000 x 4 companies)
+    assert_equal BigDecimal("0.0075"), scoring.worst_case_cost
   end
 
   test "drafting cost matches the hand calculation" do
     drafting = run_dry.stages.last
-    # expected: (6,000 in * 2 + 1,800 out * 10 + 1,000 cache reads * .2 + 1,000 write * 4) / 1e6
-    assert_equal BigDecimal("0.0342"), drafting.expected_cost
-    # worst: (8,000 in * 2 + 4,000 out * 10) / 1e6
-    assert_equal BigDecimal("0.056"), drafting.worst_case_cost
+    # 4 leads (1 real + 3 projected); expected:
+    # (14,000 in * 2 + 3,600 out * 10 + 3,000 cache reads * .2 + 1,000 write * 4) / 1e6
+    assert_equal BigDecimal("0.0686"), drafting.expected_cost
+    # worst: (18,000 in * 2 + 8,000 out * 10) / 1e6
+    assert_equal BigDecimal("0.116"), drafting.worst_case_cost
   end
 
   test "totals add up and batch pricing halves everything" do
     result = run_dry
-    assert_equal BigDecimal("0.03643"), result.expected_cost
-    assert_equal BigDecimal("0.0605"), result.worst_case_cost
-    assert_equal BigDecimal("0.018215"), run_dry(batch: true).expected_cost
+    assert_equal BigDecimal("0.07083"), result.expected_cost
+    assert_equal BigDecimal("0.1235"), result.worst_case_cost
+    assert_equal BigDecimal("0.035415"), run_dry(batch: true).expected_cost
   end
 
   test "worst case versus the cap decides whether it fits" do
     Setting.set("budget.spending_cap_usd", 1)
     assert run_dry.fits?
-    Setting.set("budget.spending_cap_usd", 0.05)
+    Setting.set("budget.spending_cap_usd", 0.1)
     assert_not run_dry.fits?
     Setting.reset("budget.spending_cap_usd")
     assert_not run_dry.fits?, "no cap means nothing fits"
   end
 
   test "spend already committed reduces what remains" do
-    Setting.set("budget.spending_cap_usd", 0.07)
+    Setting.set("budget.spending_cap_usd", 0.13)
     assert run_dry.fits?
     ScoringBatch.create!(anthropic_batch_id: "b1", reserved_usd: 0.02)
     assert_not run_dry.fits?
@@ -109,7 +110,7 @@ class Budget::DryRunTest < ActiveSupport::TestCase
     assert_includes text, "DRY RUN: no paid API calls were made."
     assert_includes text, "4 (1 projected)"
     assert_includes text, "claude-haiku-5-5"
-    assert_includes text, "$0.0364"
+    assert_includes text, "$0.0708"
     assert_includes text, "Worst case fits within the cap: YES"
 
     Setting.reset("budget.spending_cap_usd")

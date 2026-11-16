@@ -42,4 +42,33 @@ class Drafting::RequestBuilderTest < ActiveSupport::TestCase
     content = Drafting::EvidenceFormatter.new(page_words: 3).call(@company.reload)
     assert_includes content, "1 2 3\n</page>"
   end
+
+  test "the instructions demand a concrete, company-specific detail and a title-shaped angle" do
+    text = @request[:system_].first[:text]
+    assert_includes text, "PERSONALIZE (this matters most)"
+    assert_includes text, "ONE concrete detail from THIS company"
+    assert_includes text, "could be sent unchanged to any company in their industry is wrong"
+    assert_includes text, "Let the contact's title shape the angle"
+    assert_includes text, "Never invent a detail"
+    assert_equal "v2", Drafting::RequestBuilder.new.prompt_version
+  end
+
+  test "the lead block gives the model the company's own facts and the contact's title, not just the assessment" do
+    @company.update!(industry: "Hospital & Health Care", employees: 65, city: "Boston", state: "Massachusetts", country: "United States",
+                     short_description: "Remote-first digital health platform for care teams", technologies: "AWS, Salesforce")
+    content = Drafting::EvidenceFormatter.new.call(@company.reload)
+
+    assert_includes content, "Contact title: CEO"
+    assert_includes content, "Industry: Hospital & Health Care"
+    assert_includes content, "Employees: 65"
+    assert_includes content, "Location: Boston, Massachusetts, United States"
+    assert_includes content, "What they do (Apollo): Remote-first digital health platform for care teams"
+    assert_includes content, "Technologies: AWS, Salesforce"
+  end
+
+  test "facts that are blank are left out rather than printed empty" do
+    content = Drafting::EvidenceFormatter.new.call(@company.reload)
+    assert_not_includes content, "Industry:"
+    assert_not_includes content, "Location:"
+  end
 end

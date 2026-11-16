@@ -6,7 +6,7 @@ module Scoring
     class MissingApiKey < StandardError; end
 
     def self.from_environment(env: ENV, credentials: Rails.application.credentials)
-      key = env["ANTHROPIC_API_KEY"].presence || credentials.dig(:anthropic, :api_key)
+      key = ApiKey.read(env: env, credentials: credentials)
       raise MissingApiKey, "Set ANTHROPIC_API_KEY or credentials anthropic.api_key" if key.blank?
 
       new(Anthropic::Client.new(api_key: key))

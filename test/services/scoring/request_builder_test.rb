@@ -11,7 +11,7 @@ class Scoring::RequestBuilderTest < ActiveSupport::TestCase
 
   test "uses the configured scoring model, token cap and low effort" do
     assert_equal "claude-haiku-5-5", @request[:model]
-    assert_equal 1500, @request[:max_tokens]
+    assert_equal 3000, @request[:max_tokens]
     assert_equal "low", @request[:output_config][:effort]
     assert_equal "json_schema", @request[:output_config][:format_][:type]
   end

@@ -18,7 +18,7 @@ class Drafting::RecorderTest < ActiveSupport::TestCase
     assert_equal @company.selected_contact, message.contact
     assert_equal run, message.draft_run
     assert_equal "claude-sonnet-5-5", message.model
-    assert_equal "v1", message.prompt_version
+    assert_equal "v2", message.prompt_version
     assert_operator message.word_count, :<=, 50
     assert_includes message.evidence, "support split"
     assert_equal [ 900, 150, 700 ], [ run.tokens_in, run.tokens_out, run.cache_read_tokens ]

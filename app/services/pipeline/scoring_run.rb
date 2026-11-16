@@ -2,20 +2,22 @@ module Pipeline
   # Scores the companies awaiting evaluation as one tracked run. Stops cleanly when the spending cap
   # would be exceeded. `scope` narrows the companies (the pilot uses it).
   class ScoringRun
-    def initialize(gateway:, scope: Company.all, limit: nil, scorer: nil, out: $stdout)
+    def initialize(gateway:, scope: Company.all, limit: nil, run: nil, scorer: nil, out: $stdout)
       @scorer = scorer || Scoring::CompanyScorer.new(gateway: gateway)
       @scope = scope
       @limit = limit
+      @run = run
       @out = out
     end
 
     def call
-      run = PipelineRun.track("score") do |tracked|
+      work = lambda do |tracked|
         companies.each do |company|
           evaluation = @scorer.call(company, run: tracked)
           @out.puts describe(company, evaluation) if evaluation
         end
       end
+      run = @run ? PipelineRun.run_with(@run, &work) : PipelineRun.track("score", &work)
       @out.puts Budget::RunSummary.new(run)
       run
     end
