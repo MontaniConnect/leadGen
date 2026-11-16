@@ -85,20 +85,17 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
+  # One Postgres database (Railway's DATABASE_URL) holds the app tables and the Solid Queue, Cache and Cable tables.
+  # They are separate configurations only so each keeps its own migrations folder.
   primary: &primary_production
     <<: *default
-    database: leadgen_production
-    username: leadgen
-    password: <%= ENV["LEADGEN_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
   cache:
     <<: *primary_production
-    database: leadgen_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: leadgen_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: leadgen_production_cable
     migrations_paths: db/cable_migrate
