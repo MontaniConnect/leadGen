@@ -28,7 +28,11 @@ Rails.application.configure do
   config.force_ssl = true
 
   # Skip http-to-https redirect for the default health check endpoint.
-  # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+  config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+
+  # The whole app sits behind a password in production (see AccessGate). With APP_PASSWORD unset it refuses
+  # every request, so a missing setting can never leave leads and the spend buttons open to the internet.
+  config.x.require_access_password = true
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]
