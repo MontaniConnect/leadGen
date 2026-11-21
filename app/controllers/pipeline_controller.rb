@@ -2,7 +2,7 @@
 class PipelineController < ApplicationController
   def fetch
     ids = Pipeline::Status.new.awaiting_fetch.pluck(:id)
-    ids.each { |id| FetchCompanyPagesJob.perform_later(id) }
+    ActiveJob.perform_all_later(ids.map { |id| FetchCompanyPagesJob.new(id) })
     redirect_to dashboard_path, notice: if ids.empty?
       "Nothing to fetch: every company that passed already has its pages."
                                         else

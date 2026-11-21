@@ -4,7 +4,7 @@ class ContactResearchController < ApplicationController
 
   def create
     ids = lookup_scope.pluck(:id)
-    ids.each { |id| FindContactJob.perform_later(id) }
+    ActiveJob.perform_all_later(ids.map { |id| FindContactJob.new(id) })
     notice = if ids.empty?
       "Nothing to look up: every company that passed already has a contact or was checked recently."
     else
