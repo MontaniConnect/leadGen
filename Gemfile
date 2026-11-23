@@ -61,7 +61,7 @@ gem "faraday-retry", "~> 2.4"
 gem "faraday-follow_redirects", "~> 0.5.0"
 gem "nokogiri", "~> 1.19"
 
-gem "anthropic", "~> 2.8"
+gem "anthropic", "~> 2.12"
 
 gem "json_schemer", "~> 2.5"
 
